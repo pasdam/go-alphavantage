@@ -9,6 +9,11 @@ import (
 )
 
 func Test_mapResponseToRate(t *testing.T) {
+	validTimestamps := []time.Time{
+		time.Unix(1587511775, 0).UTC(),
+		time.Unix(1587511785, 0).UTC(),
+		time.Unix(1587511795, 0).UTC(),
+	}
 	type args struct {
 		resp *currencyExchangeRateResponse
 	}
@@ -34,7 +39,7 @@ func Test_mapResponseToRate(t *testing.T) {
 				Rate:          106.897,
 				Bid:           10.11,
 				Ask:           20.22,
-				LastRefreshed: time.Unix(1587511775, 0).UTC(),
+				LastRefreshed: &validTimestamps[0],
 			},
 			wantErr: nil,
 		},
@@ -54,7 +59,7 @@ func Test_mapResponseToRate(t *testing.T) {
 				Rate:          0,
 				Bid:           0,
 				Ask:           0,
-				LastRefreshed: time.Unix(1587511785, 0).UTC(),
+				LastRefreshed: &validTimestamps[1],
 			},
 			wantErr: nil,
 		},
@@ -74,7 +79,7 @@ func Test_mapResponseToRate(t *testing.T) {
 				Rate:          0,
 				Bid:           0,
 				Ask:           0,
-				LastRefreshed: time.Unix(1587511795, 0).UTC(),
+				LastRefreshed: &validTimestamps[2],
 			},
 			wantErr: nil,
 		},
