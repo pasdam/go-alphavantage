@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"testing"
+	"time"
 
 	"github.com/pasdam/mockit/mockit"
 	"github.com/stretchr/testify/assert"
@@ -251,4 +252,248 @@ func Test_clientImpl_ExchangeRate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_clientImpl_ExchangeRate_RealService(t *testing.T) {
+	t.Skip("This is used only for manual testing")
+
+	c := NewClient("demo") // Replace the api key with a valid one to run the test
+	r, err := c.ExchangeRate(CurrencyCodeUSD, CurrencyCodeEUR)
+	assert.Nil(t, err)
+	assert.NotNil(t, r)
+	assert.True(t, r.Rate > 0)
+}
+
+func Test_clientImpl_Quotes(t *testing.T) {
+	validTimestamps := []time.Time{
+		time.Unix(1588370400, 0).UTC(),
+		time.Unix(1588370405, 0).UTC(),
+	}
+	type mocks struct {
+		csv string
+	}
+	type fields struct {
+		apiKey  string
+		baseURL string
+	}
+	type args struct {
+		from     CurrencyCode
+		to       CurrencyCode
+		interval ForexInterval
+	}
+	tests := []struct {
+		name    string
+		mocks   mocks
+		fields  fields
+		args    args
+		want    []*Quote
+		wantErr error
+	}{
+		{
+			name: "Should correctly parse successful response",
+			mocks: mocks{
+				csv: "timestamp,open,high,low,close\n2020-05-01 22:00:00,1.001,1.002,1.003,1.004\n2020-05-01 22:00:05,2.001,2.002,2.003,2.004",
+			},
+			fields: fields{
+				apiKey:  "some-success-api-key",
+				baseURL: "some-success-path",
+			},
+			args: args{
+				from:     CurrencyCodeUSD,
+				to:       CurrencyCodeEUR,
+				interval: ForexInterval1Min,
+			},
+			want: []*Quote{
+				{
+					Timestamp: &validTimestamps[0],
+					Open:      1.001,
+					High:      1.002,
+					Low:       1.003,
+					Close:     1.004,
+				},
+				{
+					Timestamp: &validTimestamps[1],
+					Open:      2.001,
+					High:      2.002,
+					Low:       2.003,
+					Close:     2.004,
+				},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "Should return error if restutil.GetCSV raises it",
+			mocks: mocks{
+				csv: "\"invalid-csv",
+			},
+			fields: fields{
+				apiKey:  "some-get-csv-error-api-key",
+				baseURL: "some-get-csv-error-path",
+			},
+			args: args{
+				from:     CurrencyCodeINR,
+				to:       CurrencyCodeIDR,
+				interval: ForexInterval30Min,
+			},
+			want:    nil,
+			wantErr: errors.New("Unable to read CSV from the response. record on line 1; parse error on line 2, column 0: extraneous or missing \" in quoted-field"),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			called := false
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				called = true
+				assert.Equal(t, "/"+tt.fields.baseURL, r.URL.Path)
+				q := r.URL.Query()
+				assert.Equal(t, q.Get("function"), "FX_INTRADAY")
+				assert.Equal(t, q.Get("from_symbol"), tt.args.from.String())
+				assert.Equal(t, q.Get("to_symbol"), tt.args.to.String())
+				assert.Equal(t, q.Get("apikey"), tt.fields.apiKey)
+				assert.Equal(t, q.Get("outputSize"), "full")
+				assert.Equal(t, q.Get("datatype"), "csv")
+				assert.Equal(t, q.Get("interval"), tt.args.interval.String())
+				fmt.Fprintln(w, tt.mocks.csv)
+			}))
+			u, err := url.Parse(ts.URL + "/" + tt.fields.baseURL)
+			assert.Nil(t, err)
+			c := &clientImpl{
+				apiKey:  tt.fields.apiKey,
+				baseURL: u,
+			}
+
+			got, err := c.Quotes(tt.args.from, tt.args.to, tt.args.interval)
+
+			assert.True(t, called)
+			if tt.wantErr != nil {
+				assert.Nil(t, got)
+				assert.Equal(t, tt.wantErr.Error(), err.Error())
+			} else {
+				assert.Nil(t, err)
+				assert.Equal(t, tt.want, got)
+			}
+		})
+	}
+}
+
+func Test_clientImpl_QuotesCompact(t *testing.T) {
+	validTimestamps := []time.Time{
+		time.Unix(1588370400, 0).UTC(),
+		time.Unix(1588370405, 0).UTC(),
+	}
+	type mocks struct {
+		csv string
+	}
+	type fields struct {
+		apiKey  string
+		baseURL string
+	}
+	type args struct {
+		from     CurrencyCode
+		to       CurrencyCode
+		interval ForexInterval
+	}
+	tests := []struct {
+		name    string
+		mocks   mocks
+		fields  fields
+		args    args
+		want    []*Quote
+		wantErr error
+	}{
+		{
+			name: "Should correctly parse successful response",
+			mocks: mocks{
+				csv: "timestamp,open,high,low,close\n2020-05-01 22:00:00,1.001,1.002,1.003,1.004\n2020-05-01 22:00:05,2.001,2.002,2.003,2.004",
+			},
+			fields: fields{
+				apiKey:  "some-success-api-key",
+				baseURL: "some-success-path",
+			},
+			args: args{
+				from:     CurrencyCodeUSD,
+				to:       CurrencyCodeEUR,
+				interval: ForexInterval1Min,
+			},
+			want: []*Quote{
+				{
+					Timestamp: &validTimestamps[0],
+					Open:      1.001,
+					High:      1.002,
+					Low:       1.003,
+					Close:     1.004,
+				},
+				{
+					Timestamp: &validTimestamps[1],
+					Open:      2.001,
+					High:      2.002,
+					Low:       2.003,
+					Close:     2.004,
+				},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "Should return error if restutil.GetCSV raises it",
+			mocks: mocks{
+				csv: "\"invalid-csv",
+			},
+			fields: fields{
+				apiKey:  "some-get-csv-error-api-key",
+				baseURL: "some-get-csv-error-path",
+			},
+			args: args{
+				from:     CurrencyCodeINR,
+				to:       CurrencyCodeIDR,
+				interval: ForexInterval30Min,
+			},
+			want:    nil,
+			wantErr: errors.New("Unable to read CSV from the response. record on line 1; parse error on line 2, column 0: extraneous or missing \" in quoted-field"),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			called := false
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				called = true
+				assert.Equal(t, "/"+tt.fields.baseURL, r.URL.Path)
+				q := r.URL.Query()
+				assert.Equal(t, q.Get("function"), "FX_INTRADAY")
+				assert.Equal(t, q.Get("from_symbol"), tt.args.from.String())
+				assert.Equal(t, q.Get("to_symbol"), tt.args.to.String())
+				assert.Equal(t, q.Get("apikey"), tt.fields.apiKey)
+				assert.Empty(t, q.Get("outputSize"))
+				assert.Equal(t, q.Get("datatype"), "csv")
+				assert.Equal(t, q.Get("interval"), tt.args.interval.String())
+				fmt.Fprintln(w, tt.mocks.csv)
+			}))
+			u, err := url.Parse(ts.URL + "/" + tt.fields.baseURL)
+			assert.Nil(t, err)
+			c := &clientImpl{
+				apiKey:  tt.fields.apiKey,
+				baseURL: u,
+			}
+
+			got, err := c.QuotesCompact(tt.args.from, tt.args.to, tt.args.interval)
+
+			assert.True(t, called)
+			if tt.wantErr != nil {
+				assert.Nil(t, got)
+				assert.Equal(t, tt.wantErr.Error(), err.Error())
+			} else {
+				assert.Nil(t, err)
+				assert.Equal(t, tt.want, got)
+			}
+		})
+	}
+}
+
+func Test_clientImpl_QuotestCompact_RealService(t *testing.T) {
+	t.Skip("This is used only for manual testing")
+
+	c := NewClient("demo") // Replace the api key with a valid one to run the test
+	q, err := c.QuotesCompact(CurrencyCodeUSD, CurrencyCodeEUR, ForexInterval15Min)
+	assert.Nil(t, err)
+	assert.NotNil(t, q)
+	assert.Equal(t, 100, len(q))
 }

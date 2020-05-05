@@ -1,6 +1,7 @@
 package alphavantage
 
 import (
+	"errors"
 	"net/url"
 
 	"github.com/pasdam/go-rest-util/pkg/restutil"
@@ -40,4 +41,21 @@ func (c *clientImpl) ExchangeRate(from CurrencyCode, to CurrencyCode) (*Exchange
 	}
 
 	return mapResponseToRate(response)
+}
+
+func (c *clientImpl) Quotes(from CurrencyCode, to CurrencyCode, interval ForexInterval) ([]*Quote, error) {
+	return c.getQuotes(from, to, interval, true)
+}
+
+func (c *clientImpl) QuotesCompact(from CurrencyCode, to CurrencyCode, interval ForexInterval) ([]*Quote, error) {
+	return c.getQuotes(from, to, interval, false)
+}
+
+func (c *clientImpl) getQuotes(from CurrencyCode, to CurrencyCode, interval ForexInterval, full bool) ([]*Quote, error) {
+	c.baseURL.RawQuery = intradayQuery(from.String(), to.String(), interval, !full, c.apiKey)
+	rows, err := restutil.GetCSV(c.baseURL.String())
+	if err != nil {
+		return nil, errors.New("Unable to read CSV from the response. " + err.Error())
+	}
+	return mapCsvToQuotes(rows)
 }
