@@ -282,12 +282,13 @@ func Test_clientImpl_Quotes(t *testing.T) {
 		interval ForexInterval
 	}
 	tests := []struct {
-		name    string
-		mocks   mocks
-		fields  fields
-		args    args
-		want    []*Quote
-		wantErr error
+		name             string
+		mocks            mocks
+		fields           fields
+		args             args
+		shouldCallServer bool
+		want             []*Quote
+		wantErr          error
 	}{
 		{
 			name: "Should correctly parse successful response",
@@ -303,6 +304,7 @@ func Test_clientImpl_Quotes(t *testing.T) {
 				to:       CurrencyCodeEUR,
 				interval: ForexInterval1Min,
 			},
+			shouldCallServer: true,
 			want: []*Quote{
 				{
 					Timestamp: &validTimestamps[0],
@@ -335,8 +337,45 @@ func Test_clientImpl_Quotes(t *testing.T) {
 				to:       CurrencyCodeIDR,
 				interval: ForexInterval30Min,
 			},
-			want:    nil,
-			wantErr: errors.New("Unable to read CSV from the response. record on line 1; parse error on line 2, column 0: extraneous or missing \" in quoted-field"),
+			shouldCallServer: true,
+			want:             nil,
+			wantErr:          errors.New("Unable to read CSV from the response. record on line 1; parse error on line 2, column 0: extraneous or missing \" in quoted-field"),
+		},
+		{
+			name: "Should not perform network call and return error if from is not a physical currency",
+			mocks: mocks{
+				csv: "",
+			},
+			fields: fields{
+				apiKey:  "some-not-physical-from-api-key",
+				baseURL: "some-not-physical-from-path",
+			},
+			args: args{
+				from:     CurrencyCodeBTC,
+				to:       CurrencyCodeJPY,
+				interval: ForexInterval30Min,
+			},
+			shouldCallServer: false,
+			want:             nil,
+			wantErr:          errors.New("Quotes are not supported for digital currencies"),
+		},
+		{
+			name: "Should not perform network call and return error if from is not a physical currency",
+			mocks: mocks{
+				csv: "",
+			},
+			fields: fields{
+				apiKey:  "some-not-physical-from-api-key",
+				baseURL: "some-not-physical-from-path",
+			},
+			args: args{
+				from:     CurrencyCodeJPY,
+				to:       CurrencyCodeBTC,
+				interval: ForexInterval5Min,
+			},
+			shouldCallServer: false,
+			want:             nil,
+			wantErr:          errors.New("Quotes are not supported for digital currencies"),
 		},
 	}
 	for _, tt := range tests {
@@ -364,7 +403,7 @@ func Test_clientImpl_Quotes(t *testing.T) {
 
 			got, err := c.Quotes(tt.args.from, tt.args.to, tt.args.interval)
 
-			assert.True(t, called)
+			assert.Equal(t, tt.shouldCallServer, called)
 			if tt.wantErr != nil {
 				assert.Nil(t, got)
 				assert.Equal(t, tt.wantErr.Error(), err.Error())
@@ -394,12 +433,13 @@ func Test_clientImpl_QuotesCompact(t *testing.T) {
 		interval ForexInterval
 	}
 	tests := []struct {
-		name    string
-		mocks   mocks
-		fields  fields
-		args    args
-		want    []*Quote
-		wantErr error
+		name             string
+		mocks            mocks
+		fields           fields
+		args             args
+		shouldCallServer bool
+		want             []*Quote
+		wantErr          error
 	}{
 		{
 			name: "Should correctly parse successful response",
@@ -415,6 +455,7 @@ func Test_clientImpl_QuotesCompact(t *testing.T) {
 				to:       CurrencyCodeEUR,
 				interval: ForexInterval1Min,
 			},
+			shouldCallServer: true,
 			want: []*Quote{
 				{
 					Timestamp: &validTimestamps[0],
@@ -447,8 +488,45 @@ func Test_clientImpl_QuotesCompact(t *testing.T) {
 				to:       CurrencyCodeIDR,
 				interval: ForexInterval30Min,
 			},
-			want:    nil,
-			wantErr: errors.New("Unable to read CSV from the response. record on line 1; parse error on line 2, column 0: extraneous or missing \" in quoted-field"),
+			shouldCallServer: true,
+			want:             nil,
+			wantErr:          errors.New("Unable to read CSV from the response. record on line 1; parse error on line 2, column 0: extraneous or missing \" in quoted-field"),
+		},
+		{
+			name: "Should not perform network call and return error if from is not a physical currency",
+			mocks: mocks{
+				csv: "",
+			},
+			fields: fields{
+				apiKey:  "some-not-physical-from-api-key",
+				baseURL: "some-not-physical-from-path",
+			},
+			args: args{
+				from:     CurrencyCodeBTC,
+				to:       CurrencyCodeJPY,
+				interval: ForexInterval30Min,
+			},
+			shouldCallServer: false,
+			want:             nil,
+			wantErr:          errors.New("Quotes are not supported for digital currencies"),
+		},
+		{
+			name: "Should not perform network call and return error if from is not a physical currency",
+			mocks: mocks{
+				csv: "",
+			},
+			fields: fields{
+				apiKey:  "some-not-physical-from-api-key",
+				baseURL: "some-not-physical-from-path",
+			},
+			args: args{
+				from:     CurrencyCodeJPY,
+				to:       CurrencyCodeBTC,
+				interval: ForexInterval5Min,
+			},
+			shouldCallServer: false,
+			want:             nil,
+			wantErr:          errors.New("Quotes are not supported for digital currencies"),
 		},
 	}
 	for _, tt := range tests {
@@ -476,7 +554,7 @@ func Test_clientImpl_QuotesCompact(t *testing.T) {
 
 			got, err := c.QuotesCompact(tt.args.from, tt.args.to, tt.args.interval)
 
-			assert.True(t, called)
+			assert.Equal(t, tt.shouldCallServer, called)
 			if tt.wantErr != nil {
 				assert.Nil(t, got)
 				assert.Equal(t, tt.wantErr.Error(), err.Error())

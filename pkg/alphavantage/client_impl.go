@@ -52,6 +52,10 @@ func (c *clientImpl) QuotesCompact(from CurrencyCode, to CurrencyCode, interval 
 }
 
 func (c *clientImpl) getQuotes(from CurrencyCode, to CurrencyCode, interval ForexInterval, full bool) ([]*Quote, error) {
+	if !from.IsPhysical() || !to.IsPhysical() {
+		return nil, errors.New("Quotes are not supported for digital currencies")
+	}
+
 	c.baseURL.RawQuery = intradayQuery(from.String(), to.String(), interval, !full, c.apiKey)
 	rows, err := restutil.GetCSV(c.baseURL.String())
 	if err != nil {
