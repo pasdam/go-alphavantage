@@ -35,7 +35,10 @@ func NewClientForURL(apiKey string, baseURL string) (Client, error) {
 func (c *clientImpl) ExchangeRate(from CurrencyCode, to CurrencyCode) (*ExchangeRate, error) {
 	response := &currencyExchangeRateResponse{}
 	c.baseURL.RawQuery = currencyExchangeRateQuery(from.String(), to.String(), c.apiKey)
-	err := restutil.GetJSON(c.baseURL.String(), response)
+	headers := map[string][]string{
+		"User-Agent": {"Mozilla/5.0 (Macintosh; Intel Mac OS X 10.16; rv:84.0) Gecko/20100101 Firefox/84.0"},
+	}
+	err := restutil.GetJSON(c.baseURL.String(), headers, response)
 	if err != nil {
 		return nil, err
 	}
