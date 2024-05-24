@@ -6,6 +6,6 @@ go 1.14
 
 require (
 	github.com/pasdam/go-rest-util v0.0.0-20201229215525-5c98f5f09fad
-	github.com/pasdam/mockit v0.0.0-20201218205457-c54f12cbcca0
-	github.com/stretchr/testify v1.7.1
+	github.com/pasdam/mockit v0.0.0-20240523151812-7ef966c902ef
+	github.com/stretchr/testify v1.8.2
 )
