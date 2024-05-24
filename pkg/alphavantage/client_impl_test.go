@@ -339,7 +339,7 @@ func Test_clientImpl_Quotes(t *testing.T) {
 			},
 			shouldCallServer: true,
 			want:             nil,
-			wantErr:          errors.New("Unable to read CSV from the response. record on line 1; parse error on line 2, column 0: extraneous or missing \" in quoted-field"),
+			wantErr:          errors.New("Unable to read CSV from the response. parse error on line 1, column 14: extraneous or missing \" in quoted-field"),
 		},
 		{
 			name: "Should not perform network call and return error if from is not a physical currency",
@@ -490,7 +490,7 @@ func Test_clientImpl_QuotesCompact(t *testing.T) {
 			},
 			shouldCallServer: true,
 			want:             nil,
-			wantErr:          errors.New("Unable to read CSV from the response. record on line 1; parse error on line 2, column 0: extraneous or missing \" in quoted-field"),
+			wantErr:          errors.New("Unable to read CSV from the response. parse error on line 1, column 14: extraneous or missing \" in quoted-field"),
 		},
 		{
 			name: "Should not perform network call and return error if from is not a physical currency",
