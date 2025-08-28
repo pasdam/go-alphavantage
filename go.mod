@@ -7,7 +7,7 @@ go 1.17
 require (
 	github.com/pasdam/go-rest-util v0.0.0-20201229215525-5c98f5f09fad
 	github.com/pasdam/mockit v0.0.0-20240524154541-fb54ecfd0e1e
-	github.com/stretchr/testify v1.11.0
+	github.com/stretchr/testify v1.11.1
 )
 
 require (
